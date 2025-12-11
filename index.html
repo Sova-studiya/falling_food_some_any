@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Food Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+        
+        body {
+            background: url('img/body.png') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            color: #ff4081;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 0 #ffeb3b;
+        }
+        
+        .game-info {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .score, .lives {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2196f3;
+        }
+        
+        .lives {
+            color: #ff4081;
+        }
+        
+        .game-area {
+            position: relative;
+            width: 100vw;
+            height: calc(100vh - 80px);
+            overflow: hidden;
+            flex-grow: 1;
+        }
+        
+        .basket {
+            position: absolute;
+            bottom: 40px;
+            width: 300px;
+            height: 100px;
+            background: url('img/basket.png') no-repeat center center;
+            background-size: contain;
+            transition: all 0.05s ease-out;
+            z-index: 10;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        .falling-object {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            transition: transform 0.2s;
+        }
+        
+        .falling-object:hover {
+            transform: scale(1.1);
+        }
+        
+        .falling-object img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 25;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 1.3rem;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #2e7d32;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 0 #2e7d32;
+        }
+        
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 #2e7d32;
+        }
+        
+        #start-btn {
+            background-color: #ff4081;
+            box-shadow: 0 5px 0 #d5006d;
+        }
+        
+        #start-btn:hover {
+            box-shadow: 0 8px 0 #d5006d;
+        }
+        
+        #start-btn:active {
+            box-shadow: 0 3px 0 #d5006d;
+        }
+        
+        .quiz-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+        
+        .quiz-box {
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .quiz-question {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #333;
+            text-align: center;
+        }
+        
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .quiz-option {
+            padding: 20px;
+            background-color: #1565C0;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            font-weight: bold;
+            border: 3px solid #0D47A1;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .quiz-option:hover {
+            background-color: #1976D2;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        
+        .quiz-option.correct {
+            background-color: #2E7D32;
+            color: white;
+            border-color: #1B5E20;
+        }
+        
+        .quiz-option.incorrect {
+            background-color: #C62828;
+            color: white;
+            border-color: #B71C1C;
+        }
+        
+        .game-over, .win-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            color: white;
+        }
+        
+        .game-over h2, .win-screen h2 {
+            font-size: 4rem;
+            margin-bottom: 30px;
+            color: #ff4081;
+        }
+        
+        .win-screen h2 {
+            color: #ffeb3b;
+            text-shadow: 0 0 10px #ff4081;
+        }
+        
+        .final-score {
+            font-size: 3rem;
+            margin-bottom: 40px;
+        }
+        
+        .firework {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: explode 1s forwards;
+            z-index: 15;
+        }
+        
+        @keyframes explode {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+        
+        .instructions-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 30;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .instructions-popup h3 {
+            color: #ff4081;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        
+        .instructions-popup p {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        #close-instructions {
+            margin-top: 20px;
+            background-color: #4caf50;
+        }
+        
+        .instructions-hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Falling Food Game</h1>
+        <div class="game-info">
+            <div class="score">Score: <span id="score">0</span></div>
+            <div class="lives">Lives: <span id="lives">10</span></div>
+        </div>
+    </div>
+    
+    <div class="game-area" id="game-area">
+        <div class="instructions-popup" id="instructions-popup">
+            <h3>How to Play</h3>
+            <p>Use ← → arrow keys or mouse to move the basket</p>
+            <p>Catch falling food to score points!</p>
+            <p>Every 5 points, answer a grammar question</p>
+            <p>Wrong answers cost 5 points! Answer correctly to continue!</p>
+            <p>3 correct answers in a row give +3 lives (max 10)</p>
+            <button id="close-instructions">Start Game</button>
+        </div>
+        
+        <div class="basket" id="basket"></div>
+        <div class="quiz-container" id="quiz-container">
+            <div class="quiz-box">
+                <div class="quiz-question" id="quiz-question"></div>
+                <div class="quiz-options" id="quiz-options"></div>
+            </div>
+        </div>
+        <div class="game-over" id="game-over">
+            <h2>Game Over!</h2>
+            <div class="final-score">Your score: <span id="final-score">0</span></div>
+            <button id="restart-btn">Play Again</button>
+        </div>
+        <div class="win-screen" id="win-screen">
+            <h2>Congratulations!</h2>
+            <div class="final-score">You won with <span id="win-score">0</span> points!</div>
+            <button id="play-again-btn">Play Again</button>
+        </div>
+        
+        <div class="controls">
+            <button id="start-btn">Restart Game</button>
+            <button id="pause-btn">Pause</button>
+        </div>
+    </div>
+
+    <script>
+        // Game elements
+        const gameArea = document.getElementById('game-area');
+        const basket = document.getElementById('basket');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const gameOverScreen = document.getElementById('game-over');
+        const winScreen = document.getElementById('win-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const winScoreDisplay = document.getElementById('win-score');
+        const quizContainer = document.getElementById('quiz-container');
+        const quizQuestion = document.getElementById('quiz-question');
+        const quizOptions = document.getElementById('quiz-options');
+        const instructionsPopup = document.getElementById('instructions-popup');
+        const closeInstructionsBtn = document.getElementById('close-instructions');
+        
+        // Game variables
+        let score = 0;
+        let lives = 10;
+        let gameActive = false;
+        let gamePaused = false;
+        let basketPosition = (gameArea.offsetWidth - basket.offsetWidth) / 2;
+        let fallingObjects = [];
+        let objectInterval;
+        let animationId;
+        let lastQuizScore = 0;
+        let correctAnswersInRow = 0;
+        const MAX_FALLING_OBJECTS = 5;
+        
+        // Game settings - вынесены в отдельные константы для легкого сброса
+        const GAME_SETTINGS = {
+            objectSpeed: { min: 0.5, max: 1.5 }, // Замедленная скорость
+            spawnInterval: 1200, // Интервал создания объектов
+            moveSpeed: 30 // Скорость движения корзины
+        };
+
+        // Current game settings - будут сбрасываться при рестарте
+        let currentSettings = { ...GAME_SETTINGS };
+        
+        // **Updated grammar questions with 'some' and 'any' using only Present Simple
+        // and correct countability/pluralization:**
+        // Правила: 
+        // 0 - some (утверждения)
+        // 1 - any (отрицания и общие вопросы)
+        const grammarQuestions = [
+            // Утвердительные предложения (SOME) - Mass Nouns (Uncountable)
+            { question: "I have ____ ice cream.", options: ["some", "any"], correct: 0 },
+            { question: "There is ____ rice on the plate.", options: ["some", "any"], correct: 0 },
+            { question: "She cooks ____ chicken.", options: ["some", "any"], correct: 0 },
+            { question: "We need ____ water for the dough.", options: ["some", "any"], correct: 0 },
+            { question: "He eats ____ fish.", options: ["some", "any"], correct: 0 },
+            
+            // Утвердительные предложения (SOME) - Countable Nouns (Plural)
+            { question: "We bought ____ cookies.", options: ["some", "any"], correct: 0 },
+            { question: "They want ____ burgers.", options: ["some", "any"], correct: 0 },
+            { question: "He eats ____ carrots.", options: ["some", "any"], correct: 0 },
+            { question: "We need ____ potatoes.", options: ["some", "any"], correct: 0 },
+            
+            // Отрицательные предложения (ANY) - Mass Nouns
+            { question: "I don't have ____ lemonade.", options: ["some", "any"], correct: 1 },
+            { question: "There isn't ____ meat in the soup.", options: ["some", "any"], correct: 1 },
+            { question: "We don't want ____ jelly.", options: ["some", "any"], correct: 1 },
+            
+            // Отрицательные предложения (ANY) - Countable Nouns (Plural)
+            { question: "I don't have ____ chips.", options: ["some", "any"], correct: 1 },
+            { question: "He doesn't eat ____ sandwiches.", options: ["some", "any"], correct: 1 },
+            { question: "They don't see ____ cakes.", options: ["some", "any"], correct: 1 },
+            
+            // Общие вопросы (ANY) - Mass Nouns (Is there)
+            { question: "Is there ____ pizza left?", options: ["some", "any"], correct: 1 },
+            { question: "Is there ____ water in the glass?", options: ["some", "any"], correct: 1 },
+            
+            // Общие вопросы (ANY) - Countable Nouns (Are there / Do you have)
+            { question: "Do you have ____ burgers?", options: ["some", "any"], correct: 1 },
+            { question: "Are there ____ sandwiches in the box?", options: ["some", "any"], correct: 1 },
+            { question: "Are there ____ cakes?", options: ["some", "any"], correct: 1 },
+            { question: "Do you find ____ cookies?", options: ["some", "any"], correct: 1 },
+            { question: "Are there ____ vegetables in the fridge?", options: ["some", "any"], correct: 1 },
+            { question: "Do you see ____ carrots on the shelf?", options: ["some", "any"], correct: 1 }
+        ];
+        
+        // Product images from img folder
+        const productImages = [
+            'img/beans.png',
+            'img/biscuits.png',
+            'img/bread.png',
+            'img/chocolate.png',
+            'img/Coke.png',
+            'img/jam.png',
+            'img/milk.png',
+            'img/potatoes.png'
+        ];
+        
+        // Initialize game
+        function initGame() {
+            // Полностью останавливаем текущую игру
+            if (objectInterval) {
+                clearInterval(objectInterval);
+                objectInterval = null;
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            // Сбрасываем все переменные
+            score = 0;
+            lives = 10;
+            gameActive = true;
+            gamePaused = false;
+            basketPosition = (gameArea.offsetWidth - basket.offsetWidth) / 2;
+            fallingObjects = [];
+            lastQuizScore = 0;
+            correctAnswersInRow = 0;
+            
+            // Сбрасываем настройки скорости к исходным
+            currentSettings = { ...GAME_SETTINGS };
+            
+            updateDisplay();
+            basket.style.left = basketPosition + 'px';
+            
+            // Полностью очищаем все падающие объекты
+            document.querySelectorAll('.falling-object').forEach(obj => {
+                obj.remove();
+            });
+            
+            // Запускаем создание объектов с правильным интервалом
+            objectInterval = setInterval(createFallingObject, currentSettings.spawnInterval);
+            
+            // Запускаем игровой цикл
+            animationId = requestAnimationFrame(gameLoop);
+            
+            // Скрываем экраны окончания игры и инструкции
+            gameOverScreen.style.display = 'none';
+            winScreen.style.display = 'none';
+            instructionsPopup.classList.add('instructions-hidden');
+            
+            // Обновляем текст кнопок
+            startBtn.textContent = 'Restart Game';
+            pauseBtn.textContent = 'Pause';
+        }
+        
+        // Update score and lives display
+        function updateDisplay() {
+            scoreDisplay.textContent = score;
+            livesDisplay.textContent = lives;
+        }
+        
+        // Create a falling object
+        function createFallingObject() {
+            if (!gameActive || gamePaused) return;
+            
+            // Проверяем, не превышено ли максимальное количество объектов
+            if (fallingObjects.length >= MAX_FALLING_OBJECTS) {
+                return;
+            }
+            
+            const object = document.createElement('div');
+            object.classList.add('falling-object');
+            
+            // Random position
+            const leftPos = Math.random() * (gameArea.offsetWidth - 80);
+            object.style.left = leftPos + 'px';
+            object.style.top = '-80px';
+            
+            // Используем сброшенную скорость
+            const speed = currentSettings.objectSpeed.min + Math.random() * currentSettings.objectSpeed.max;
+            object.speed = speed;
+            
+            // Use product images from img folder
+            const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
+            const img = document.createElement('img');
+            img.src = randomImage;
+            img.alt = "Falling object";
+            object.appendChild(img);
+            
+            gameArea.appendChild(object);
+            fallingObjects.push(object);
+        }
+        
+        // Main game loop
+        function gameLoop() {
+            if (!gameActive || gamePaused) {
+                // Если игра на паузе, но активна, продолжаем проверять, не нужно ли возобновить анимацию.
+                if (gameActive) {
+                    animationId = requestAnimationFrame(gameLoop);
+                }
+                return;
+            }
+            
+            // Move falling objects
+            for (let i = fallingObjects.length - 1; i >= 0; i--) {
+                const obj = fallingObjects[i];
+                const currentTop = parseFloat(obj.style.top);
+                const newTop = currentTop + obj.speed;
+                
+                obj.style.top = newTop + 'px';
+                
+                // Check if object is caught
+                if (newTop + 80 >= gameArea.offsetHeight - 100 && 
+                    newTop <= gameArea.offsetHeight - 20 &&
+                    parseFloat(obj.style.left) + 40 >= basketPosition &&
+                    parseFloat(obj.style.left) <= basketPosition + 300) {
+                    
+                    // Object caught
+                    obj.remove();
+                    fallingObjects.splice(i, 1);
+                    score++;
+                    updateDisplay();
+                    
+                    // Check for quiz
+                    if (score > 0 && score % 5 === 0 && score !== lastQuizScore) {
+                        lastQuizScore = score;
+                        showQuiz();
+                    }
+                    
+                    // Check for win
+                    if (score >= 50) {
+                        winGame();
+                        return;
+                    }
+                }
+                
+                // Check if object missed
+                if (newTop > gameArea.offsetHeight) {
+                    obj.remove();
+                    fallingObjects.splice(i, 1);
+                    lives--;
+                    updateDisplay();
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        // Show grammar quiz
+        function showQuiz() {
+            gamePaused = true;
+            // Остановка падения еды
+            if (objectInterval) {
+                clearInterval(objectInterval);
+                objectInterval = null;
+            }
+            
+            // Select a random question (questions appear randomly)
+            const randomIndex = Math.floor(Math.random() * grammarQuestions.length);
+            const question = grammarQuestions[randomIndex];
+            
+            quizQuestion.textContent = question.question;
+            quizOptions.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.classList.add('quiz-option');
+                button.textContent = option;
+                // Присваиваем обработчик с параметрами текущего вопроса
+                button.addEventListener('click', () => checkAnswer(index, question.correct));
+                quizOptions.appendChild(button);
+            });
+            
+            quizContainer.style.display = 'flex';
+        }
+        
+        // Check quiz answer
+        function checkAnswer(selected, correct) {
+            const options = document.querySelectorAll('.quiz-option');
+            
+            // Отключаем кнопки, чтобы предотвратить повторное нажатие
+            options.forEach((option, index) => {
+                if (index === correct) {
+                    option.classList.add('correct');
+                } else if (index === selected && index !== correct) {
+                    option.classList.add('incorrect');
+                }
+                
+                option.disabled = true;
+            });
+            
+            setTimeout(() => {
+                if (selected === correct) {
+                    // Правильный ответ: Возобновление игры
+                    correctAnswersInRow++;
+                    
+                    if (correctAnswersInRow >= 3) {
+                        lives = Math.min(lives + 3, 10);
+                        correctAnswersInRow = 0;
+                    }
+                    updateDisplay();
+                    
+                    quizContainer.style.display = 'none';
+                    gamePaused = false;
+                    
+                    // Возобновление падения еды и игрового цикла
+                    objectInterval = setInterval(createFallingObject, currentSettings.spawnInterval);
+                    animationId = requestAnimationFrame(gameLoop);
+                } else {
+                    // Неправильный ответ: Списать очки, показать новый вопрос (игра остается на паузе)
+                    correctAnswersInRow = 0;
+                    score = Math.max(0, score - 5);
+                    updateDisplay();
+                    
+                    // Показываем новый случайный вопрос (gamePaused остается true)
+                    showQuiz(); 
+                }
+            }, 1500); // Ожидание 1.5с для показа визуального фидбека
+        }
+        
+        // Game over
+        function gameOver() {
+            gameActive = false;
+            if (objectInterval) {
+                clearInterval(objectInterval);
+                objectInterval = null;
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        // Win game (Game stops here)
+        function winGame() {
+            gameActive = false;
+            // Остановка игры после победы
+            if (objectInterval) {
+                clearInterval(objectInterval);
+                objectInterval = null;
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            winScoreDisplay.textContent = score;
+            winScreen.style.display = 'flex';
+            
+            // Create fireworks
+            createFireworks();
+        }
+        
+        // Create fireworks for win screen
+        function createFireworks() {
+            const colors = ['#FF5252', '#FF4081', '#E040FB', '#7C4DFF', '#536DFE', 
+                           '#448AFF', '#40C4FF', '#18FFFF', '#64FFDA', '#69F0AE', 
+                           '#B2FF59', '#EEFF41', '#FFFF00', '#FFD740', '#FFAB40'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const firework = document.createElement('div');
+                    firework.classList.add('firework');
+                    
+                    const size = 5 + Math.random() * 15;
+                    firework.style.width = size + 'px';
+                    firework.style.height = size + 'px';
+                    
+                    firework.style.left = Math.random() * 100 + '%';
+                    firework.style.top = Math.random() * 100 + '%';
+                    firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    gameArea.appendChild(firework);
+                    
+                    setTimeout(() => {
+                        firework.remove();
+                    }, 1000);
+                }, i * 100);
+            }
+        }
+        
+        // Move basket with keyboard
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive || gamePaused) return;
+            
+            if (e.key === 'ArrowLeft' && basketPosition > 0) {
+                basketPosition -= currentSettings.moveSpeed;
+                if (basketPosition < 0) basketPosition = 0;
+            } else if (e.key === 'ArrowRight' && basketPosition < gameArea.offsetWidth - basket.offsetWidth) {
+                basketPosition += currentSettings.moveSpeed;
+                if (basketPosition > gameArea.offsetWidth - basket.offsetWidth) {
+                    basketPosition = gameArea.offsetWidth - basket.offsetWidth;
+                }
+            }
+            
+            basket.style.left = basketPosition + 'px';
+        });
+        
+        // Move basket with mouse
+        gameArea.addEventListener('mousemove', (e) => {
+            if (!gameActive || gamePaused) return;
+            
+            const rect = gameArea.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            
+            const targetPosition = Math.max(0, Math.min(mouseX - basket.offsetWidth / 2, gameArea.offsetWidth - basket.offsetWidth));
+            
+            basketPosition = targetPosition;
+            basket.style.left = basketPosition + 'px';
+        });
+        
+        // Button event listeners
+        startBtn.addEventListener('click', initGame);
+        
+        pauseBtn.addEventListener('click', () => {
+            if (gameActive && !gamePaused) {
+                gamePaused = true;
+                if (objectInterval) {
+                    clearInterval(objectInterval);
+                    objectInterval = null;
+                }
+                pauseBtn.textContent = 'Resume';
+            } else if (gameActive && gamePaused) {
+                // Если игра на паузе из-за кнопки, возобновляем. 
+                // Если на паузе из-за квиза, эта кнопка не работает (quizContainer.style.display === 'flex')
+                if (quizContainer.style.display !== 'flex') {
+                    gamePaused = false;
+                    objectInterval = setInterval(createFallingObject, currentSettings.spawnInterval);
+                    animationId = requestAnimationFrame(gameLoop);
+                    pauseBtn.textContent = 'Pause';
+                }
+            }
+        });
+        
+        restartBtn.addEventListener('click', initGame);
+        playAgainBtn.addEventListener('click', initGame);
+        
+        // Close instructions and start game
+        closeInstructionsBtn.addEventListener('click', initGame);
+        
+        // Initialize basket position
+        basket.style.left = basketPosition + 'px';
+        
+        // Show instructions on page load
+        window.addEventListener('load', () => {
+            instructionsPopup.classList.remove('instructions-hidden');
+        });
+    </script>
+</body>
+</html>
